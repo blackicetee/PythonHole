@@ -15,13 +15,8 @@ class Calculus:
         print("getter of calculation_results called")
         return self.__calculation_results
 
-    def __init__(self):
-        context_of_text_file = TextFileStorage.read_lines_from_text_file(self.CALCULUS_STORAGE_FILE_NAME)
-        if context_of_text_file is not None:
-            list_of_string_calculation_results = MyConverter.replace_an_array_of_characters_from_a_string(
-                context_of_text_file[0].rstrip('\n'), ['[', ',', ']']).split()
-            self.__calculation_results = MyConverter.convert_list_with_strings_into_list_with_numbers(
-                list_of_string_calculation_results)
+    # def __init__(self):
+    #    self.__calculation_results = self.restore_calculation_results()
 
     # ______________________ methods for calculation ______________________
 
@@ -50,11 +45,23 @@ class Calculus:
         self.__calculation_results.append(x % y)
         return x % y
 
-    # stores the __calculation_results as a string in an output text file
+    # saves the calculation_results as a string in an output text file
+    # TODO Restore calculation results and then store them | so storage of multiple sessions is possible
     def save_calculation_results_in_file(self):
         TextFileStorage.write_string_in_file(
             MyConverter.convert_list_of_numbers_into_string(self.__calculation_results),
             self.CALCULUS_STORAGE_FILE_NAME)
+
+    # restore the calculation_results
+    def restore_calculation_results(self):
+        context_of_text_file = TextFileStorage.read_lines_from_text_file(self.CALCULUS_STORAGE_FILE_NAME)
+        if context_of_text_file is not None:
+            list_of_string_values_of_calculation_results = MyConverter.replace_an_array_of_characters_from_a_string(
+                context_of_text_file[0].rstrip('\n'), ['[', ',', ']']).split()
+            return MyConverter.convert_list_with_strings_into_list_with_numbers(
+                list_of_string_values_of_calculation_results)
+        else:
+            return []
 
 
 class MyConverter:
@@ -88,7 +95,7 @@ class MyConverter:
             if '.' in string:
                 list_with_numbers.append(float(string))
             elif '-' in string:
-                list_with_numbers.append(-int(string))
+                list_with_numbers.append((2 * int(string)) - int(string))
             else:
                 list_with_numbers.append(int(string))
         return list_with_numbers
@@ -177,10 +184,6 @@ class TestCalculus(unittest.TestCase):
         self.test_calculus.mul(10, 66)
         self.test_calculus.mod(9, 2)
         self.test_calculus.save_calculation_results_in_file()
-        context_of_text_file_with_calculation_results = TextFileStorage.read_lines_from_text_file(
-            self.test_calculus.CALCULUS_STORAGE_FILE_NAME)
-        list_of_string_values_of_calculation_results = MyConverter.replace_an_array_of_characters_from_a_string(
-            context_of_text_file_with_calculation_results[0].rstrip('\n'), ['[', ',', ']']).split()
-        list_of_calculation_results = MyConverter.convert_list_with_strings_into_list_with_numbers(
-            list_of_string_values_of_calculation_results)
-        self.assertEqual(list_of_calculation_results, self.test_calculus.calculation_results)
+        TextFileStorage.write_string_in_file(
+            MyConverter.convert_list_of_numbers_into_string(self.test_calculus.calculation_results), "test.txt")
+        self.assertEqual(self.test_calculus.restore_calculation_results(), self.test_calculus.calculation_results)
