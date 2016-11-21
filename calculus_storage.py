@@ -1,3 +1,4 @@
+import os
 import unittest
 
 
@@ -15,8 +16,13 @@ class Calculus:
         print("getter of calculation_results called")
         return self.__calculation_results
 
-    # def __init__(self):
-    #    self.__calculation_results = self.restore_calculation_results()
+    def reset_calculation_results(self):
+        self.__calculation_results = []
+
+    def __init__(self):
+        calculation_results_from_file = self.load_calculation_results_from_file()
+        if calculation_results_from_file is not None:
+            self.__calculation_results = calculation_results_from_file
 
     # ______________________ methods for calculation ______________________
 
@@ -45,38 +51,37 @@ class Calculus:
         self.__calculation_results.append(x % y)
         return x % y
 
-    # saves the calculation_results as a string in an output text file
-    # TODO Restore calculation results and then store them | so storage of multiple sessions is possible
+    # stores the calculation_results as a string in an output text file
     def save_calculation_results_in_file(self):
         TextFileStorage.write_string_in_file(
             MyConverter.convert_list_of_numbers_into_string(self.__calculation_results),
             self.CALCULUS_STORAGE_FILE_NAME)
 
-    # restore the calculation_results
-    def restore_calculation_results(self):
-        context_of_text_file = TextFileStorage.read_lines_from_text_file(self.CALCULUS_STORAGE_FILE_NAME)
-        if context_of_text_file is not None:
-            list_of_string_values_of_calculation_results = MyConverter.replace_an_array_of_characters_from_a_string(
-                context_of_text_file[0].rstrip('\n'), ['[', ',', ']']).split()
-            return MyConverter.convert_list_with_strings_into_list_with_numbers(
-                list_of_string_values_of_calculation_results)
+    # loads the calculation results from an output text file
+    def load_calculation_results_from_file(self):
+        context_of_file = TextFileStorage.read_lines_from_text_file(self.CALCULUS_STORAGE_FILE_NAME)
+        if context_of_file is not None:
+            list_of_calculation_results_as_strings = MyConverter.replace_an_array_of_characters_from_a_string(
+                context_of_file[0].rstrip('\n'), ['[', ',', ']']).split()
+            return MyConverter.convert_list_with_strings_into_list_with_numbers(list_of_calculation_results_as_strings)
         else:
-            return []
+            return None
+
+    # deletes the output text file
+    def delete_calculation_results_in_file(self):
+        if os.path.isfile(self.CALCULUS_STORAGE_FILE_NAME):
+            os.remove(self.CALCULUS_STORAGE_FILE_NAME)
 
 
 class MyConverter:
     # converts a list of numbers into a string
     @staticmethod
     def convert_list_of_numbers_into_string(list_of_numbers):
-        result_string = ""
+        result_string = "["
         for number in list_of_numbers:
-            if number == list_of_numbers[0]:
-                result_string += ("[" + str(number) + ", ")
-            elif number == list_of_numbers[len(list_of_numbers) - 1]:
-                result_string += (str(number) + "]")
-            else:
-                result_string += (str(number) + ", ")
-        return result_string
+            result_string += str(number) + ", "
+        result_string += "]"
+        return result_string.replace(", ]", "]")
 
     # replaces all characters in a string that are given in an array
     # so at the end there will be no character intersection between the string and the array
@@ -95,7 +100,8 @@ class MyConverter:
             if '.' in string:
                 list_with_numbers.append(float(string))
             elif '-' in string:
-                list_with_numbers.append((2 * int(string)) - int(string))
+                # TODO refine the validation and converter functions
+                list_with_numbers.append(abs(int(string)) * (-1))
             else:
                 list_with_numbers.append(int(string))
         return list_with_numbers
@@ -135,7 +141,7 @@ class TestMyConverter(unittest.TestCase):
     def test_convert_list_with_strings_into_list_with_numbers(self):
         self.assertEqual(
             MyConverter.convert_list_with_strings_into_list_with_numbers(["213", "-21312312124", "321.1232"]),
-            [213, 21312312124, 321.1232])
+            [213, -21312312124, 321.1232])
 
 
 # TestClass of TextFileStorage
@@ -184,6 +190,11 @@ class TestCalculus(unittest.TestCase):
         self.test_calculus.mul(10, 66)
         self.test_calculus.mod(9, 2)
         self.test_calculus.save_calculation_results_in_file()
-        TextFileStorage.write_string_in_file(
-            MyConverter.convert_list_of_numbers_into_string(self.test_calculus.calculation_results), "test.txt")
-        self.assertEqual(self.test_calculus.restore_calculation_results(), self.test_calculus.calculation_results)
+        self.assertEqual(self.test_calculus.load_calculation_results_from_file(),
+                         self.test_calculus.calculation_results)
+
+    def test_delete_calculation_results_in_file(self):
+        if not os.path.isfile(self.test_calculus.CALCULUS_STORAGE_FILE_NAME):
+            TextFileStorage.write_string_in_file("", self.test_calculus.CALCULUS_STORAGE_FILE_NAME)
+        self.test_calculus.delete_calculation_results_in_file()
+        self.assertFalse(os.path.isfile(self.test_calculus.CALCULUS_STORAGE_FILE_NAME))
