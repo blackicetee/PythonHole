@@ -2,7 +2,7 @@ import os
 import unittest
 
 
-# Class implements the functions of a calculus with storage.
+# Class implements the functions of a calculus with storage
 class Calculus:
     # Name of the file, where the __calculation_results should be stored in and where they should be refound
     CALCULUS_STORAGE_FILE_NAME = "calculus_output.txt"
